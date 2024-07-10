@@ -61,6 +61,23 @@ def cameraList_from_camInfos(cam_infos, resolution_scale, args):
 
     return camera_list
 
+def cameraList_from_camInfos_z(cam_infos, resolution_scale, args): # -r: no resize
+    camera_list = []
+    for id, c in enumerate(cam_infos):
+        orig_w, orig_h = c.image.size
+        # orig_w, orig_h = 100,100
+        resized_image_rgb = PILtoTorch(c.image, (orig_w, orig_h))
+        gt_image = resized_image_rgb[:3, ...]
+        loaded_mask = None
+        if resized_image_rgb.shape[1] == 4:
+            loaded_mask = resized_image_rgb[3:4, ...]
+        cam_current = Camera(colmap_id=c.uid, R=c.R, T=c.T,
+                      FoVx=c.FovX, FoVy=c.FovY,
+                      image=gt_image, gt_alpha_mask=loaded_mask,
+                      image_name=c.image_name, uid=id, data_device=args.data_device)
+        camera_list.append(cam_current)
+    return camera_list
+
 def camera_to_JSON(id, camera : Camera):
     Rt = np.zeros((4, 4))
     Rt[:3, :3] = camera.R.transpose()
